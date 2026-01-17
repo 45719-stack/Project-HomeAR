@@ -51,10 +51,10 @@ export default function SignupPage() {
             setTimeout(() => {
                 navigate('/login', { state: { email } });
             }, 1500);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            if (err.message) {
-                setError(err.message);
+            if (err instanceof Error || (typeof err === 'object' && err !== null && 'message' in err)) {
+                setError((err as any).message);
             } else {
                 setError('Failed to create an account. Please try again.');
             }

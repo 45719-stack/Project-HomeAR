@@ -6,9 +6,9 @@ import {
     RefreshCw, RotateCcw, MousePointer2, Move, Maximize, Copy, Trash2, Lock, Unlock,
     Armchair, Lamp, BedDouble, Table, Box, Sprout, ChevronDown
 } from 'lucide-react';
-import TemplateLibrary, { TEMPLATES } from '../components/TemplateLibrary';
+import TemplateLibrary from '../components/TemplateLibrary';
+import { TEMPLATES, type Plan, type Template } from '../data/templates';
 import ThreeRoomBuilder, { type FurnitureItem, type WallConfig } from '../components/ThreeRoomBuilder';
-import type { Plan, Template } from '../components/TemplateLibrary';
 import { useAuthGate } from '../hooks/useAuthGate';
 import { saveProject } from '../services/projectService';
 

@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.setItem('token', data.token);
 
             setUser(userData);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Login failed:", err);
             const message = err instanceof ApiError ? err.message : 'Login failed. Please try again.';
             setError(message);
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             // Just call API, do not set user state or token so we don't auto-login
             await authService.signup(name, email, password);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Signup failed:", err);
             const message = err instanceof ApiError ? err.message : 'Signup failed. Please try again.';
             setError(message);

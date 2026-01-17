@@ -130,6 +130,12 @@ app.post('/api/auth/login', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+// Export for Vercel
+module.exports = app;
+
+// Only listen if running directly (not required as a module)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+}

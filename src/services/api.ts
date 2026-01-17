@@ -1,10 +1,10 @@
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? "http://localhost:5000" : "");
 
 export class ApiError extends Error {
     public status?: number;
-    public data?: any;
+    public data?: unknown;
 
-    constructor(message: string, status?: number, data?: any) {
+    constructor(message: string, status?: number, data?: unknown) {
         super(message);
         this.status = status;
         this.data = data;
@@ -20,7 +20,7 @@ async function handleResponse(res: Response) {
     return data;
 }
 
-export async function apiGet(path: string) {
+export async function apiGet<T = any>(path: string): Promise<T> {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -32,14 +32,14 @@ export async function apiGet(path: string) {
         });
         clearTimeout(timeoutId);
         return handleResponse(res);
-    } catch (err: any) {
-        if (err.name === 'AbortError') throw new ApiError('Request timeout', 408);
+    } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') throw new ApiError('Request timeout', 408);
         if (err instanceof ApiError) throw err;
         throw new ApiError('Server offline', 0, err);
     }
 }
 
-export async function apiPost(path: string, body: any) {
+export async function apiPost<T = any>(path: string, body: unknown): Promise<T> {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -52,8 +52,8 @@ export async function apiPost(path: string, body: any) {
         });
         clearTimeout(timeoutId);
         return handleResponse(res);
-    } catch (err: any) {
-        if (err.name === 'AbortError') throw new ApiError('Request timeout', 408);
+    } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') throw new ApiError('Request timeout', 408);
         if (err instanceof ApiError) throw err;
         throw new ApiError('Server offline', 0, err);
     }

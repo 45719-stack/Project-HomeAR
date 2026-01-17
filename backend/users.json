@@ -16,43 +16,5 @@
     "name": "hanan",
     "email": "hanan18@gmail.com",
     "password": "hanan445566"
-  },
-  {
-    "id": 1768619158201,
-    "name": "Taha",
-    "email": "taha12@gmail.com",
-    "password": "taha321"
-  },
-  {
-    "id": 1768619988000,
-    "name": "Test User",
-    "email": "test@example.com",
-    "password": "password123",
-    "plan": "free",
-    "createdAt": 1768619988000
-  },
-  {
-    "id": 1768621020203,
-    "name": "taha",
-    "email": "taha23@gmail.com",
-    "password": "taha123",
-    "plan": "free",
-    "createdAt": 1768621020203
-  },
-  {
-    "id": 1768621632257,
-    "name": "taha",
-    "email": "taha43@gmail.com",
-    "password": "taha456",
-    "plan": "free",
-    "createdAt": 1768621632257
-  },
-  {
-    "id": 1768621974348,
-    "name": "ahktar",
-    "email": "ahktar22@gmail.com",
-    "password": "hello12",
-    "plan": "free",
-    "createdAt": 1768621974348
   }
 ]

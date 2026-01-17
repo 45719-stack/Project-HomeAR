@@ -65,8 +65,8 @@ export default function LoginPage() {
 
     // Fetch suggestions on mount
     useEffect(() => {
-        apiGet('/api/users')
-            .then((users: any) => setSuggestions(users))
+        apiGet<Array<{ name: string, email: string }>>('/api/users')
+            .then((users) => setSuggestions(users))
             .catch(err => console.log("Failed to load suggestions:", err));
     }, []);
 
@@ -115,13 +115,13 @@ export default function LoginPage() {
                 }
             }, 600); // Slightly longer than transition to ensure smooth exit
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             // For errors, hide splash immediately as requested
             setIsSplashVisible(false);
             setIsLoading(false);
 
-            if (err.message) {
-                setError(err.message);
+            if (err instanceof Error || (typeof err === 'object' && err !== null && 'message' in err)) {
+                setError((err as { message: string }).message);
             } else {
                 setError('Failed to login. Please check your connection or try again.');
             }

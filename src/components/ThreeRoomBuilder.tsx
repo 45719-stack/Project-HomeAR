@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, TransformControls, Grid, useCursor } from '@react-three/drei';
 import * as THREE from 'three';
@@ -194,7 +194,7 @@ function FurnitureObject({ item, isSelected, onSelect, onUpdate, transformMode, 
             </group>
             {isSelected && !locked && (
                 <TransformControls
-                    object={meshRef as any}
+                    object={meshRef as React.MutableRefObject<THREE.Group>}
                     mode={transformMode}
                     onMouseUp={() => {
                         if (meshRef.current) {

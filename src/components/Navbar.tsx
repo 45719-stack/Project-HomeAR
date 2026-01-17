@@ -64,38 +64,7 @@ export default function Navbar() {
             .slice(0, 2);
     };
 
-    // NavItem Component for Desktop
-    const NavItem = ({ to, children }: { to: string; children: React.ReactNode }) => {
-        const baseClasses = "relative group px-1 py-2 text-sm font-medium transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md"; // Reusable base
-        const activeClasses = "text-primary-600 dark:text-primary-400"; // Reusable active
-        const inactiveClasses = "text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"; // Reusable inactive + hover color
-        const animationClasses = "hover:-translate-y-px"; // Reusable animation (1px lift)
 
-        return (
-            <NavLink
-                to={to}
-                className={({ isActive }) => `
-                    ${baseClasses}
-                    ${isActive ? activeClasses : inactiveClasses}
-                    ${animationClasses}
-                `}
-            >
-                {({ isActive }) => (
-                    <>
-                        <span className="relative z-10">{children}</span>
-                        {/* Glow Effect - Slightly stronger */}
-                        <span className="absolute inset-0 bg-primary-400/0 group-hover:bg-primary-400/10 rounded-md blur-sm transition-colors duration-300"></span>
-                        {/* Underline Animation */}
-                        <span className={`
-                            absolute bottom-0 left-0 w-full h-0.5 bg-primary-600 dark:bg-primary-400 rounded-full
-                            origin-left transition-transform duration-300 ease-out
-                            ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}
-                        `}></span>
-                    </>
-                )}
-            </NavLink>
-        );
-    };
 
     return (
         <>
@@ -342,5 +311,38 @@ export default function Navbar() {
                 )}
             </nav>
         </>
+    );
+}
+
+// NavItem Component for Desktop
+function NavItem({ to, children }: { to: string; children: React.ReactNode }) {
+    const baseClasses = "relative group px-1 py-2 text-sm font-medium transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md"; // Reusable base
+    const activeClasses = "text-primary-600 dark:text-primary-400"; // Reusable active
+    const inactiveClasses = "text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"; // Reusable inactive + hover color
+    const animationClasses = "hover:-translate-y-px"; // Reusable animation (1px lift)
+
+    return (
+        <NavLink
+            to={to}
+            className={({ isActive }) => `
+                ${baseClasses}
+                ${isActive ? activeClasses : inactiveClasses}
+                ${animationClasses}
+            `}
+        >
+            {({ isActive }) => (
+                <>
+                    <span className="relative z-10">{children}</span>
+                    {/* Glow Effect - Slightly stronger */}
+                    <span className="absolute inset-0 bg-primary-400/0 group-hover:bg-primary-400/10 rounded-md blur-sm transition-colors duration-300"></span>
+                    {/* Underline Animation */}
+                    <span className={`
+                        absolute bottom-0 left-0 w-full h-0.5 bg-primary-600 dark:bg-primary-400 rounded-full
+                        origin-left transition-transform duration-300 ease-out
+                        ${isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}
+                    `}></span>
+                </>
+            )}
+        </NavLink>
     );
 }
