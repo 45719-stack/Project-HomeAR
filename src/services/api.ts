@@ -33,11 +33,11 @@ api.interceptors.response.use(
             status = error.response.status;
             message = error.response.data?.message || error.message;
 
-            if (status === 401) message = 'Invalid email or password';
-            if (status === 409) message = 'Email already registered';
-            if (status === 0) message = 'Server unreachable. Please check your connection.';
+            if (status === 401) message = 'User not found. Please sign up first.';
+            if (status === 409) message = 'User already exists';
+            if (status === 0) message = 'Server offline';
         } else if (error.request) {
-            message = 'Server unreachable. Please check your connection.';
+            message = 'Server offline';
             status = 0;
         }
 
@@ -52,7 +52,7 @@ export const authService = {
     },
 
     async signup(name: string, email: string, password: string) {
-        const response = await api.post('/api/auth/signup', { name, email, password });
+        const response = await api.post('/api/auth/register', { name, email, password });
         return response.data;
     },
 

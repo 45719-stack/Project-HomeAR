@@ -1,11 +1,11 @@
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+// 1) Always use ABSOLUTE PATH for users.json
 const DATA_FILE = path.join(__dirname, 'users.json');
 
 // Ensure data file exists with valid JSON
@@ -25,21 +25,14 @@ if (!fs.existsSync(DATA_FILE)) {
     }
 }
 
-// CORS Configuration
+// 2) Ensure Express middleware exists
+app.use(express.json());
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        /\.vercel\.app$/, // Allow all vercel subdomains
-        /\.web\.app$/,    // Allow firebase hosting
-        /\.firebaseapp\.com$/ // Allow firebase hosting
-    ],
+    origin: "http://localhost:5173",
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-app.use(bodyParser.json());
 
 // Helper to read users
 const readUsers = () => {
@@ -65,8 +58,8 @@ app.get('/', (req, res) => {
     res.send('HomeAR Backend is Running');
 });
 
-// Register endpoint
-app.post('/api/auth/signup', (req, res) => {
+// 3) Implement POST /api/auth/register
+app.post('/api/auth/register', (req, res) => {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
@@ -84,18 +77,23 @@ app.post('/api/auth/signup', (req, res) => {
         id: Date.now(),
         name: name.trim(),
         email: normalizedEmail,
-        password: password // In production, hash this!
+        password: password, // In a real app, hash this!
+        plan: 'free',
+        createdAt: Date.now()
     };
 
     users.push(newUser);
     writeUsers(users);
+
+    // Log success as requested
+    console.log("User saved:", normalizedEmail);
 
     // Return user without password
     const { password: _, ...userSafe } = newUser;
     res.status(201).json({ message: 'User registered successfully', user: userSafe, token: 'dummy-token-' + newUser.id });
 });
 
-// Login endpoint
+// 4) Implement POST /api/auth/login
 app.post('/api/auth/login', (req, res) => {
     const { email, password } = req.body;
 
@@ -108,7 +106,7 @@ app.post('/api/auth/login', (req, res) => {
     const user = users.find(u => u.email === normalizedEmail && u.password === password);
 
     if (!user) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+        return res.status(401).json({ message: 'User not found. Please sign up first.' });
     }
 
     // Return user without password

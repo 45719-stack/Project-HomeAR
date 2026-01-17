@@ -22,5 +22,13 @@
     "name": "Taha",
     "email": "taha12@gmail.com",
     "password": "taha321"
+  },
+  {
+    "id": 1768619988000,
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "password123",
+    "plan": "free",
+    "createdAt": 1768619988000
   }
 ]
