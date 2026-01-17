@@ -209,6 +209,34 @@ export default function LoginPage() {
                     </div>
                 </div>
             </div>
+            {/* Dev Debug Helper */}
+            {
+                import.meta.env.DEV && (
+                    <div className="fixed bottom-4 right-4 z-[100]">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+                                    const { db } = await import('../lib/firebase');
+                                    if (!db) throw new Error("DB not initialized");
+                                    await addDoc(collection(db, "test"), {
+                                        message: "Ping from Dev Button",
+                                        timestamp: serverTimestamp(),
+                                        device: navigator.userAgent
+                                    });
+                                    alert("Firestore write successful! Check 'test' collection.");
+                                } catch (e: any) {
+                                    console.error(e);
+                                    alert("Firestore write failed: " + e.message);
+                                }
+                            }}
+                            className="bg-red-500 text-white text-xs px-2 py-1 rounded shadow opacity-50 hover:opacity-100"
+                        >
+                            Test Firestore
+                        </button>
+                    </div>
+                )
+            }
         </>
     );
 }

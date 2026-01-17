@@ -10,6 +10,8 @@ import TemplateLibrary, { TEMPLATES } from '../components/TemplateLibrary';
 import ThreeRoomBuilder, { type FurnitureItem, type WallConfig } from '../components/ThreeRoomBuilder';
 import type { Plan, Template } from '../components/TemplateLibrary';
 import { useAuthGate } from '../hooks/useAuthGate';
+import { saveProject } from '../services/projectService';
+
 
 // Furniture Catalog Configuration
 const FURNITURE_CATALOG = [
@@ -276,6 +278,38 @@ export default function RedesignPage() {
     // Get selected furniture object for property panel
     const selectedItem = furnitureItems.find(i => i.id === selectedItemId);
 
+    const handleSaveProject = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setShowLoginModal(true);
+            return;
+        }
+
+        // Construct project data
+        const projectData = {
+            roomType: manualStep < 3 ? roomType : "Custom Room",
+            designStyle: activeTab === 'ai' ? designStyle : "Manual",
+            dimensions: roomDims,
+            wallConfig,
+            floorType,
+            furnitureItems,
+            snapshot: resultImage || null
+        };
+
+        try {
+            showToast("Saving project...");
+            await saveProject(projectData);
+            showToast("Project saved successfully!");
+        } catch (error) {
+            console.error(error);
+            if (error instanceof Error && error.message.includes('permission-denied')) {
+                showToast("Permission denied: Firestore rules blocked request.");
+            } else {
+                showToast("Failed to save project.");
+            }
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors pb-20 font-sans">
             {toastMessage && (
@@ -537,7 +571,7 @@ export default function RedesignPage() {
                                 <button onClick={handleDuplicateItem} disabled={!selectedItemId} className="p-2 text-blue-500 disabled:opacity-30 hover:bg-blue-50 rounded" title="Duplicate"><Copy size={18} /></button>
                             </div>
                         </div>
-                        <button className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-500 flex items-center gap-2"><Save size={18} /> Save Project</button>
+                        <button onClick={handleSaveProject} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-500 flex items-center gap-2"><Save size={18} /> Save Project</button>
                     </div>
 
                     <div className="flex-1 flex relative overflow-hidden">

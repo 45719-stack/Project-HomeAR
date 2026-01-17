@@ -1,6 +1,6 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,7 +12,11 @@ const firebaseConfig = {
 };
 
 // Safety check: Ensure all required keys are present
-const isFirebaseConfigured = Object.values(firebaseConfig).every(value => typeof value === 'string' && value.length > 0);
+const missingKeys = Object.entries(firebaseConfig)
+    .filter(([_, value]) => !value || typeof value !== 'string' || value.length === 0)
+    .map(([key]) => key);
+
+const isFirebaseConfigured = missingKeys.length === 0;
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
@@ -28,8 +32,7 @@ if (isFirebaseConfigured) {
         console.error('Firebase initialization error:', error);
     }
 } else {
-    console.warn('Missing Firebase configuration keys. Firebase features will be disabled.');
+    console.warn(`Missing Firebase configuration keys: ${missingKeys.join(', ')}. Firebase features will be disabled.`);
 }
 
 export { auth, db, isFirebaseConfigured };
-
