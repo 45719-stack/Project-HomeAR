@@ -1,17 +1,14 @@
+import type { User } from '../services/authTypes';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export const useAuthGate = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [user, setUser] = useState<any>(null);
-
-    useEffect(() => {
+    const [user] = useState<User | null>(() => {
         const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-    }, []);
+        return storedUser ? JSON.parse(storedUser) : null;
+    });
 
     const requireAuth = (actionName: string = 'Premium features', redirectPath?: string) => {
         const token = localStorage.getItem('token');

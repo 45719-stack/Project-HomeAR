@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, featureName = 'Premium features', requirePremium = false }: ProtectedRouteProps) {
-    const { user, userData, loading } = useAuth();
+    const { user, loading } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -29,7 +29,7 @@ export default function ProtectedRoute({ children, featureName = 'Premium featur
         />;
     }
 
-    const userPlan = userData?.plan || 'free';
+    const userPlan = user?.plan || 'free';
 
     if (requirePremium && userPlan === 'free') {
         return (

@@ -59,6 +59,8 @@ export default function LoginPage() {
 
     // Derived state for info message
     const params = new URLSearchParams(location.search);
+
+    // Check if we have an error message from navigation state
     const infoMessage = location.state?.message ||
         (params.get('redirect') === '/upgrade' ? 'Please log in to upgrade your plan.' : '');
 
@@ -97,12 +99,12 @@ export default function LoginPage() {
                 }
             }, 600); // Slightly longer than transition to ensure smooth exit
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             // For errors, hide splash immediately as requested
             setIsSplashVisible(false);
             setIsLoading(false);
 
-            if (err.message) {
+            if (err instanceof Error) {
                 setError(err.message);
             } else {
                 setError('Failed to login. Please check your connection or try again.');
@@ -139,7 +141,7 @@ export default function LoginPage() {
                         {error && (
                             <AuthErrorAlert
                                 message={error}
-                                onRetry={() => handleLogin({ preventDefault: () => { } } as any)}
+                                onRetry={() => handleLogin({ preventDefault: () => { } } as React.FormEvent)}
                             />
                         )}
 
@@ -154,9 +156,9 @@ export default function LoginPage() {
                                     <input
                                         type="email"
                                         required
-                                        disabled={isLoading}
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
+                                        disabled={isLoading}
                                         className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         placeholder="you@example.com"
                                     />
@@ -175,9 +177,9 @@ export default function LoginPage() {
                                     <input
                                         type="password"
                                         required
-                                        disabled={isLoading}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
+                                        disabled={isLoading}
                                         className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         placeholder="••••••••"
                                     />
@@ -209,34 +211,6 @@ export default function LoginPage() {
                     </div>
                 </div>
             </div>
-            {/* Dev Debug Helper */}
-            {
-                import.meta.env.DEV && (
-                    <div className="fixed bottom-4 right-4 z-[100]">
-                        <button
-                            onClick={async () => {
-                                try {
-                                    const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-                                    const { db } = await import('../lib/firebase');
-                                    if (!db) throw new Error("DB not initialized");
-                                    await addDoc(collection(db, "test"), {
-                                        message: "Ping from Dev Button",
-                                        timestamp: serverTimestamp(),
-                                        device: navigator.userAgent
-                                    });
-                                    alert("Firestore write successful! Check 'test' collection.");
-                                } catch (e: any) {
-                                    console.error(e);
-                                    alert("Firestore write failed: " + e.message);
-                                }
-                            }}
-                            className="bg-red-500 text-white text-xs px-2 py-1 rounded shadow opacity-50 hover:opacity-100"
-                        >
-                            Test Firestore
-                        </button>
-                    </div>
-                )
-            }
         </>
     );
 }

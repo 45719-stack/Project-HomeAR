@@ -46,7 +46,7 @@ export default function RedesignPage() {
     // Manual Design (3D) State
     const [activeTab, setActiveTab] = useState<'ai' | 'self'>('ai');
     const [manualStep, setManualStep] = useState<1 | 2 | 3>(1);
-    const [roomDims, setRoomDims] = useState({ width: 12, height: 9, length: 12, unit: 'ft' });
+    const [roomDims, setRoomDims] = useState<{ width: number; height: number; length: number; unit: 'ft' | 'm' }>({ width: 12, height: 9, length: 12, unit: 'ft' });
 
     // Enhanced 3D State
     const [wallConfig, setWallConfig] = useState<WallConfig>({
@@ -503,7 +503,7 @@ export default function RedesignPage() {
                                                     <div className="relative">
                                                         <select
                                                             value={roomDims.unit}
-                                                            onChange={e => setRoomDims({ ...roomDims, unit: e.target.value })}
+                                                            onChange={e => setRoomDims({ ...roomDims, unit: e.target.value as 'ft' | 'm' })}
                                                             className="w-full h-12 px-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all font-semibold text-lg text-gray-900 dark:text-white appearance-none cursor-pointer"
                                                         >
                                                             <option value="ft">Feet</option>

@@ -6,11 +6,11 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
-    const { user, userData, logout } = useAuth();
+    const { user, logout } = useAuth();
 
     // Derived state
-    const userPlan = userData?.plan || 'free';
-    const userName = userData?.fullName || user?.displayName || user?.email?.split('@')[0] || 'User';
+    const userPlan = user?.plan || 'free';
+    const userName = user?.displayName || user?.email?.split('@')[0] || 'User';
     const userEmail = user?.email || '';
 
     const [isPlanMenuOpen, setIsPlanMenuOpen] = useState(false);

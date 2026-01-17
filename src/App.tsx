@@ -13,16 +13,9 @@ import UpgradePage from './pages/UpgradePage';
 
 
 
-import { API_BASE_URL } from './config/api';
-import ApiConfigError from './components/ApiConfigError';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
-  // Strict Production Guard
-  if (import.meta.env.PROD && !API_BASE_URL) {
-    return <ApiConfigError />;
-  }
-
   return (
     <AuthProvider>
       <BrowserRouter>

@@ -1,5 +1,4 @@
-import { collection, addDoc, serverTimestamp, type DocumentReference } from 'firebase/firestore';
-import { db, auth } from '../lib/firebase';
+import { demoAuth } from './demoAuth';
 
 export interface ProjectDimensions {
     width: number;
@@ -12,26 +11,18 @@ export interface ProjectData {
     roomType: string;
     designStyle: string;
     dimensions: ProjectDimensions;
-    [key: string]: any; // Flex for extra fields
+    [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export const saveProject = async (data: ProjectData): Promise<string> => {
-    if (!db) throw new Error("Firestore is not initialized");
-    if (!auth?.currentUser) throw new Error("User must be logged in to save a project");
+    const currentUser = await demoAuth.getCurrentUser();
 
-    const projectPayload = {
-        ...data,
-        uid: auth.currentUser.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-    };
+    if (!currentUser) throw new Error("User must be logged in to save a project");
 
-    try {
-        const docRef: DocumentReference = await addDoc(collection(db, "projects"), projectPayload);
-        console.log("Project saved with ID:", docRef.id);
-        return docRef.id;
-    } catch (error) {
-        console.error("Error saving project:", error);
-        throw error;
-    }
+    // Mock saving - just log it and return a fake ID
+    console.log("Saving project (Demo Mode):", data);
+
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
+
+    return "demo_project_" + Date.now();
 };
