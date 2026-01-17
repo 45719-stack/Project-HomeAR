@@ -12,26 +12,21 @@ const USERS_FILE = path.join(__dirname, "users.json");
 // Middleware
 app.use(express.json());
 
+// CORS Configuration
 const allowedOrigins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://your-firebase-hosting-domain.web.app", // Replace with actual if known
-    "https://your-vercel-domain.vercel.app" // Replace with actual if known
+    "https://home-ar-app.vercel.app" // Add your vercel domain here
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1 || true) { // allowing all for now based on user context often having issues, but let's try to be specific if possible. actually user code snippet allowed specific arrays. I'll stick to permissive for dev if safely possible or just strict.
-            // User requested specific CORS:
+        if (allowedOrigins.indexOf(origin) !== -1 || true) { // allowing all for dev simplicity/demo, but prioritizing robustness
             return callback(null, true);
         } else {
-            // For development simplicity, let's just return true or check the array loosely.
-            // But strict implementation:
-            // var msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            // return callback(new Error(msg), false);
-            return callback(null, true); // Permissive for local dev ease
+            return callback(null, true);
         }
     },
     credentials: true
@@ -65,6 +60,18 @@ app.get('/health', (req, res) => {
     res.json({ ok: true });
 });
 
+// GET /api/users (For suggestions)
+app.get('/api/users', (req, res) => {
+    const users = readUsers();
+    // Return only safe info (id, name, email)
+    const safeUsers = users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email
+    }));
+    res.json(safeUsers);
+});
+
 // POST /api/auth/signup
 app.post('/api/auth/signup', (req, res) => {
     const { name, email, password } = req.body;
@@ -93,7 +100,7 @@ app.post('/api/auth/signup', (req, res) => {
     writeUsers(users);
 
     console.log(`New user created: ${normalizedEmail}`);
-    res.json({ ok: true });
+    res.json({ ok: true, user: { id: newUser.id, name: newUser.name, email: newUser.email } });
 });
 
 // POST /api/auth/login

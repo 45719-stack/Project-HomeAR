@@ -12,24 +12,49 @@ export class ApiError extends Error {
     }
 }
 
+async function handleResponse(res: Response) {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        throw new ApiError(data.message || 'Request failed', res.status, data);
+    }
+    return data;
+}
+
+export async function apiGet(path: string) {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const res = await fetch(`${API_BASE}${path}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return handleResponse(res);
+    } catch (err: any) {
+        if (err.name === 'AbortError') throw new ApiError('Request timeout', 408);
+        if (err instanceof ApiError) throw err;
+        throw new ApiError('Server offline', 0, err);
+    }
+}
+
 export async function apiPost(path: string, body: any) {
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
         const res = await fetch(`${API_BASE}${path}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
+            signal: controller.signal
         });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            throw new ApiError(data.message || 'Request failed', res.status, data);
-        }
-
-        return data;
+        clearTimeout(timeoutId);
+        return handleResponse(res);
     } catch (err: any) {
+        if (err.name === 'AbortError') throw new ApiError('Request timeout', 408);
         if (err instanceof ApiError) throw err;
-        // Network errors (fetch throws on network failure)
         throw new ApiError('Server offline', 0, err);
     }
 }
@@ -39,7 +64,6 @@ export async function apiPost(path: string, body: any) {
 export const authService = {
     async login(email: string, password: string) {
         const res = await apiPost('/api/auth/login', { email, password });
-        // Map backend response { ok: true, user: {...} } to expected format if needed
         return { user: res.user, token: 'dummy-token' };
     },
 

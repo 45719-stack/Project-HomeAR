@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Info, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { apiPost } from '../services/api';
+import { apiPost, apiGet } from '../services/api';
 import AuthErrorAlert from '../components/AuthErrorAlert';
 
 // Simple Toast Component
@@ -59,6 +59,16 @@ export default function LoginPage() {
     const [loginStatus, setLoginStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Suggestions State
+    const [suggestions, setSuggestions] = useState<Array<{ name: string, email: string }>>([]);
+
+    // Fetch suggestions on mount
+    useEffect(() => {
+        apiGet('/api/users')
+            .then((users: any) => setSuggestions(users))
+            .catch(err => console.log("Failed to load suggestions:", err));
+    }, []);
 
     // Derived state for info message
     const params = new URLSearchParams(location.search);
@@ -216,6 +226,26 @@ export default function LoginPage() {
                         </p>
                     </div>
                 </div>
+
+                {/* Suggestions Panel (Dev Helper) */}
+                {suggestions.length > 0 && (
+                    <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 max-w-xs transition-opacity opacity-50 hover:opacity-100">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Available Users</p>
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {suggestions.map((u, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => { setEmail(u.email); }}
+                                    className="block w-full text-left text-sm px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 truncate"
+                                    title="Click to fill email"
+                                >
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">{u.name}</span>
+                                    <span className="block text-xs text-gray-500">{u.email}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );
