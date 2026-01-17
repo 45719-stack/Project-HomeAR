@@ -10,6 +10,7 @@ interface AuthContextType {
     signup: (name: string, email: string, password: string) => Promise<void>;
     logout: () => void;
     clearError: () => void;
+    setAuthUser: (user: User, token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -98,6 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const clearError = () => setError(null);
 
+    const setAuthUser = (userData: User, token: string) => {
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('token', token);
+        setUser(userData);
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -106,7 +113,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             login,
             signup,
             logout,
-            clearError
+            clearError,
+            setAuthUser
         }}>
             {children}
         </AuthContext.Provider>

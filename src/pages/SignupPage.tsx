@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+// import { useAuth } from '../context/AuthContext'; // No longer using useAuth for signup
+import { apiPost } from '../services/api';
 import AuthErrorAlert from '../components/AuthErrorAlert';
 
 // Simple Toast Component
@@ -26,7 +27,7 @@ export default function SignupPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const navigate = useNavigate();
-    const { signup } = useAuth();
+    // const { signup } = useAuth(); // Removed
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,20 +45,20 @@ export default function SignupPage() {
 
         setIsLoading(true);
         try {
-            await signup(name, email, password);
+            await apiPost("/api/auth/signup", { name, email, password });
             setShowSuccess(true);
             // Wait 1.5s then redirect to login with email prefilled
             setTimeout(() => {
                 navigate('/login', { state: { email } });
             }, 1500);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            if (err instanceof Error) {
+            if (err.message) {
                 setError(err.message);
             } else {
                 setError('Failed to create an account. Please try again.');
             }
-            setIsLoading(false); // Only stop loading if error, otherwise keep loading state during redirect
+            setIsLoading(false);
         }
     };
 

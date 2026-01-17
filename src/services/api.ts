@@ -1,69 +1,58 @@
-import axios from 'axios';
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-// Create generic backend error
 export class ApiError extends Error {
     public status?: number;
+    public data?: any;
 
-    constructor(message: string, status?: number) {
+    constructor(message: string, status?: number, data?: any) {
         super(message);
         this.status = status;
+        this.data = data;
         this.name = 'ApiError';
     }
 }
 
-// Get API URL from env or default to localhost
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+export async function apiPost(path: string, body: any) {
+    try {
+        const res = await fetch(`${API_BASE}${path}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
 
-const api = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    timeout: 10000,
-});
+        const data = await res.json().catch(() => ({}));
 
-// Response interceptor for better error handling
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        let message = 'An unexpected error occurred';
-        let status = 500;
-
-        if (error.response) {
-            status = error.response.status;
-            message = error.response.data?.message || error.message;
-
-            if (status === 401) message = 'User not found. Please sign up first.';
-            if (status === 409) message = 'User already exists';
-            if (status === 0) message = 'Server offline';
-        } else if (error.request) {
-            message = 'Server offline';
-            status = 0;
+        if (!res.ok) {
+            throw new ApiError(data.message || 'Request failed', res.status, data);
         }
 
-        return Promise.reject(new ApiError(message, status));
+        return data;
+    } catch (err: any) {
+        if (err instanceof ApiError) throw err;
+        // Network errors (fetch throws on network failure)
+        throw new ApiError('Server offline', 0, err);
     }
-);
+}
 
+// Keep existing authService for backward compatibility if needed, 
+// using the new apiPost
 export const authService = {
     async login(email: string, password: string) {
-        const response = await api.post('/api/auth/login', { email, password });
-        return response.data;
+        const res = await apiPost('/api/auth/login', { email, password });
+        // Map backend response { ok: true, user: {...} } to expected format if needed
+        return { user: res.user, token: 'dummy-token' };
     },
 
     async signup(name: string, email: string, password: string) {
-        const response = await api.post('/api/auth/register', { name, email, password });
-        return response.data;
+        return apiPost('/api/auth/signup', { name, email, password });
     },
 
     async checkHealth() {
         try {
-            await api.get('/health');
-            return true;
+            const res = await fetch(`${API_BASE}/health`);
+            return res.ok;
         } catch {
             return false;
         }
     }
 };
-
-export default api;

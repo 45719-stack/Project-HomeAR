@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Info, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { apiPost } from '../services/api';
 import AuthErrorAlert from '../components/AuthErrorAlert';
 
 // Simple Toast Component
@@ -49,7 +50,7 @@ const LoginSplash = ({ isVisible, isSuccess }: { isVisible: boolean; isSuccess: 
 export default function LoginPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login } = useAuth();
+    const { setAuthUser } = useAuth();
 
     // Initialize email from navigation state or empty
     const [email, setEmail] = useState(location.state?.email || '');
@@ -77,7 +78,7 @@ export default function LoginPage() {
         const startTime = Date.now();
 
         try {
-            await login(email, password);
+            const res = await apiPost('/api/auth/login', { email, password });
 
             // Calculate elapsed time and ensure minimum splash duration (1500ms)
             const elapsed = Date.now() - startTime;
@@ -90,6 +91,9 @@ export default function LoginPage() {
             // Success Transition
             setLoginStatus('success');
 
+            // Store user
+            setAuthUser(res.user, 'dummy-token');
+
             // Wait for fade out animation (500ms) before redirecting
             setTimeout(() => {
                 const params = new URLSearchParams(location.search);
@@ -101,12 +105,12 @@ export default function LoginPage() {
                 }
             }, 600); // Slightly longer than transition to ensure smooth exit
 
-        } catch (err: unknown) {
+        } catch (err: any) {
             // For errors, hide splash immediately as requested
             setIsSplashVisible(false);
             setIsLoading(false);
 
-            if (err instanceof Error) {
+            if (err.message) {
                 setError(err.message);
             } else {
                 setError('Failed to login. Please check your connection or try again.');
