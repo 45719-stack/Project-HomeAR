@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, WifiOff, Info, CheckCircle2 } from 'lucide-react';
-import { loginUser } from '../utils/auth';
+import { Mail, Lock, ArrowRight, Info, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import AuthErrorAlert from '../components/AuthErrorAlert';
-import { useServer } from '../context/ServerContext';
 
 // Simple Toast Component
 const Toast = ({ message, isVisible }: { message: string; isVisible: boolean }) => {
@@ -50,34 +49,21 @@ const LoginSplash = ({ isVisible, isSuccess }: { isVisible: boolean; isSuccess: 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [isSplashVisible, setIsSplashVisible] = useState(false);
     const [loginStatus, setLoginStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const location = useLocation();
-    const { isServerOnline, checkHealth } = useServer();
-    const [infoMessage, setInfoMessage] = useState('');
+    const { login } = useAuth();
+    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        const params = new URLSearchParams(location.search);
-
-        // Check state message first (from ProtectedRoute/useAuthGate)
-        if (location.state?.message) {
-            setInfoMessage(location.state.message);
-        } else if (params.get('redirect') === '/upgrade') {
-            setInfoMessage('Please log in to upgrade your plan.');
-        }
-    }, [location]);
+    // Derived state for info message
+    const params = new URLSearchParams(location.search);
+    const infoMessage = location.state?.message ||
+        (params.get('redirect') === '/upgrade' ? 'Please log in to upgrade your plan.' : '');
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Final guard
-        if (!isServerOnline) {
-            setError("Cannot connect to server. Please check your connection.");
-            return;
-        }
 
         setIsLoading(true);
         setIsSplashVisible(true);
@@ -87,20 +73,7 @@ export default function LoginPage() {
         const startTime = Date.now();
 
         try {
-            const response = await loginUser(email, password);
-
-            // Store auth data
-            if (response.token) {
-                localStorage.setItem('token', response.token);
-            }
-            if (response.user) {
-                localStorage.setItem('user', JSON.stringify(response.user));
-            } else {
-                localStorage.setItem('user', JSON.stringify({ name: email.split('@')[0] }));
-            }
-
-            // Dispatch storage event to update Navbar immediately
-            window.dispatchEvent(new Event('storage'));
+            await login(email, password);
 
             // Calculate elapsed time and ensure minimum splash duration (1500ms)
             const elapsed = Date.now() - startTime;
@@ -128,15 +101,15 @@ export default function LoginPage() {
             // For errors, hide splash immediately as requested
             setIsSplashVisible(false);
             setIsLoading(false);
-            setError(err.message || 'Failed to login');
+
+            if (err.message) {
+                setError(err.message);
+            } else {
+                setError('Failed to login. Please check your connection or try again.');
+            }
+
             setLoginStatus('error');
         }
-    };
-
-    const handleRetryConnection = async () => {
-        setIsLoading(true);
-        await checkHealth();
-        setIsLoading(false);
     };
 
     return (
@@ -162,17 +135,8 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        {/* Offline Warning */}
-                        {!isServerOnline && (
-                            <AuthErrorAlert
-                                title="Server is temporarily unavailable"
-                                message="We can't reach our servers right now. Please try again later."
-                                onRetry={handleRetryConnection}
-                            />
-                        )}
-
-                        {/* API Error Message (Only if online but failed) */}
-                        {isServerOnline && error && (
+                        {/* Error Message */}
+                        {error && (
                             <AuthErrorAlert
                                 message={error}
                                 onRetry={() => handleLogin({ preventDefault: () => { } } as any)}
@@ -190,7 +154,7 @@ export default function LoginPage() {
                                     <input
                                         type="email"
                                         required
-                                        disabled={!isServerOnline || isLoading}
+                                        disabled={isLoading}
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -202,7 +166,7 @@ export default function LoginPage() {
                             <div className="space-y-1">
                                 <div className="flex justify-between ml-1">
                                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-                                    <a href="#" className={`text-sm font-medium text-primary-600 hover:text-primary-500 ${!isServerOnline ? 'pointer-events-none opacity-50' : ''}`}>Forgot password?</a>
+                                    <a href="#" className="text-sm font-medium text-primary-600 hover:text-primary-500">Forgot password?</a>
                                 </div>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -211,7 +175,7 @@ export default function LoginPage() {
                                     <input
                                         type="password"
                                         required
-                                        disabled={!isServerOnline || isLoading}
+                                        disabled={isLoading}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -222,13 +186,11 @@ export default function LoginPage() {
 
                             <button
                                 type="submit"
-                                disabled={isLoading || !isServerOnline}
+                                disabled={isLoading}
                                 className="w-full flex items-center justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                             >
                                 {isLoading ? (
                                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                ) : !isServerOnline ? (
-                                    <><WifiOff size={18} className="mr-2" /> Server Offline</>
                                 ) : (
                                     <>Sign in <ArrowRight size={18} className="ml-2" /></>
                                 )}
@@ -240,7 +202,7 @@ export default function LoginPage() {
                     <div className="px-8 py-4 bg-gray-50 dark:bg-slate-900 border-t border-gray-100 dark:border-gray-800 text-center">
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                             Don't have an account?{' '}
-                            <Link to="/register" className={`font-bold text-primary-600 hover:text-primary-500 transition-colors ${!isServerOnline ? 'pointer-events-none opacity-50' : ''}`}>
+                            <Link to="/register" className="font-bold text-primary-600 hover:text-primary-500 transition-colors">
                                 Sign up for free
                             </Link>
                         </p>

@@ -1,50 +1,44 @@
-export const API_URL = 'http://localhost:5000/api/auth';
-export const BASE_URL = 'http://localhost:5000';
+import { AxiosError } from 'axios';
+import apiClient from './apiClient';
+
+// Helper to extract error message
+const getErrorMessage = (error: unknown, defaultMessage: string) => {
+    if (error instanceof AxiosError && error.response?.data?.message) {
+        return error.response.data.message;
+    }
+    // If the interceptor set a custom message
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+    return defaultMessage;
+};
 
 export const checkServerHealth = async (): Promise<boolean> => {
     try {
-        // Use a lightweight call like HEAD or verify a public endpoint exists
-        // Since we might not have a dedicated /health, we can try to reach the base
-        // or just rely on a fetch catching failure.
-        // Using a short timeout to fail fast.
-        await fetch(`${BASE_URL}`, {
-            method: 'HEAD',
-            signal: AbortSignal.timeout(3000)
-        });
-        return true; // Any response (even 404) means server is reachable
+        // Call the dedicated health endpoint
+        // This is much more reliable than HEAD request to base URL
+        await apiClient.get('/health', { timeout: 5000 });
+        return true;
     } catch (error) {
+        console.error('Health check failed:', error);
         return false;
     }
 };
 
 export const loginUser = async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+    try {
+        const response = await apiClient.post('/api/auth/login', { email, password });
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, 'Login failed'));
     }
-    return data;
 };
 
 export const registerUser = async (name: string, email: string, password: string) => {
-    const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+    try {
+        const response = await apiClient.post('/api/auth/register', { name, email, password });
+        return response.data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, 'Registration failed'));
     }
-    return data;
 };

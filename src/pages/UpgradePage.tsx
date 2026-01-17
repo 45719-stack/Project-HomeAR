@@ -1,14 +1,80 @@
-import { useState, useEffect } from 'react';
-import { Check, X, Shield, Zap, Crown } from 'lucide-react';
+import { useState } from 'react';
+import { Check, X, Shield, Zap, Crown, type LucideIcon } from 'lucide-react';
+
+interface PricingCardProps {
+    title: string;
+    price: string;
+    features: string[];
+    icon: LucideIcon;
+    color?: string;
+    planId: 'premium' | 'ultra';
+    currentPlan: 'free' | 'premium' | 'ultra';
+    onUpgrade: (plan: 'premium' | 'ultra') => void;
+    recommended?: boolean;
+    billingCycle: 'monthly' | 'yearly';
+}
+
+const PricingCard = ({
+    title,
+    price,
+    features,
+    icon: Icon,
+    color,
+    planId,
+    currentPlan,
+    onUpgrade,
+    recommended = false,
+    billingCycle
+}: PricingCardProps) => (
+    <div className={`relative bg-white dark:bg-gray-900 rounded-2xl p-8 border hover:-translate-y-2 transition-transform duration-300 flex flex-col ${recommended ? 'border-primary-500 shadow-xl shadow-primary-500/10' : 'border-gray-200 dark:border-gray-800 shadow-lg'}`}>
+        {recommended && (
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary-600 to-indigo-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
+                Most Popular
+            </div>
+        )}
+
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${color}`}>
+            <Icon size={32} />
+        </div>
+
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
+        <div className="flex items-baseline gap-1 mb-6">
+            <span className="text-4xl font-extrabold text-gray-900 dark:text-white">{price}</span>
+            <span className="text-gray-500 dark:text-gray-400">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+        </div>
+
+        <ul className="space-y-4 mb-8 flex-1">
+            {features.map((feature, i) => (
+                <li key={i} className="flex items-start gap-3 text-gray-600 dark:text-gray-300 text-sm font-medium">
+                    <Check size={18} className="text-green-500 shrink-0 mt-0.5" />
+                    {feature}
+                </li>
+            ))}
+        </ul>
+
+        <button
+            onClick={() => onUpgrade(planId)}
+            disabled={currentPlan === planId || (currentPlan === 'ultra' && planId === 'premium')}
+            className={`w-full py-4 rounded-xl font-bold transition-all shadow-lg ${currentPlan === planId
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 cursor-default'
+                : (currentPlan === 'ultra' && planId === 'premium')
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 active:scale-95'
+                }`}
+        >
+            {currentPlan === planId ? 'Current Plan' : 'Upgrade Now'}
+        </button>
+    </div>
+);
 
 export default function UpgradePage() {
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-    const [currentPlan, setCurrentPlan] = useState<'free' | 'premium' | 'ultra'>('free');
 
-    useEffect(() => {
-        const plan = localStorage.getItem('plan') as 'free' | 'premium' | 'ultra';
-        if (plan) setCurrentPlan(plan);
-    }, []);
+    // Lazy initialization to avoid useEffect
+    const [currentPlan, setCurrentPlan] = useState<'free' | 'premium' | 'ultra'>(() => {
+        const plan = localStorage.getItem('plan');
+        return (plan === 'premium' || plan === 'ultra') ? plan : 'free';
+    });
 
     const handleUpgrade = (plan: 'premium' | 'ultra') => {
         localStorage.setItem('plan', plan);
@@ -16,64 +82,6 @@ export default function UpgradePage() {
         // Dispatch event for Navbar update
         window.dispatchEvent(new Event('storage'));
     };
-
-    const PricingCard = ({
-        title,
-        price,
-        features,
-        icon: Icon,
-        color,
-        planId,
-        recommmended = false
-    }: {
-        title: string,
-        price: string,
-        features: string[],
-        icon: any,
-        color: string,
-        planId: 'premium' | 'ultra',
-        recommmended?: boolean
-    }) => (
-        <div className={`relative bg-white dark:bg-gray-900 rounded-2xl p-8 border hover:-translate-y-2 transition-transform duration-300 flex flex-col ${recommmended ? 'border-primary-500 shadow-xl shadow-primary-500/10' : 'border-gray-200 dark:border-gray-800 shadow-lg'}`}>
-            {recommmended && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary-600 to-indigo-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
-                    Most Popular
-                </div>
-            )}
-
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${color}`}>
-                <Icon size={32} />
-            </div>
-
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
-            <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl font-extrabold text-gray-900 dark:text-white">{price}</span>
-                <span className="text-gray-500 dark:text-gray-400">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-            </div>
-
-            <ul className="space-y-4 mb-8 flex-1">
-                {features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3 text-gray-600 dark:text-gray-300 text-sm font-medium">
-                        <Check size={18} className="text-green-500 shrink-0 mt-0.5" />
-                        {feature}
-                    </li>
-                ))}
-            </ul>
-
-            <button
-                onClick={() => handleUpgrade(planId)}
-                disabled={currentPlan === planId || (currentPlan === 'ultra' && planId === 'premium')}
-                className={`w-full py-4 rounded-xl font-bold transition-all shadow-lg ${currentPlan === planId
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 cursor-default'
-                        : (currentPlan === 'ultra' && planId === 'premium')
-                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
-                            : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 active:scale-95'
-                    }`}
-            >
-                {currentPlan === planId ? 'Current Plan' : 'Upgrade Now'}
-            </button>
-        </div>
-    );
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-20 px-4 sm:px-6 lg:px-8 transition-colors">
@@ -132,7 +140,10 @@ export default function UpgradePage() {
                         icon={Zap}
                         color="bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400"
                         planId="premium"
-                        recommmended={true}
+                        currentPlan={currentPlan}
+                        onUpgrade={handleUpgrade}
+                        recommended={true}
+                        billingCycle={billingCycle}
                         features={[
                             "Unlock All 150+ Templates",
                             "Unlimited AI Redesigns",
@@ -150,6 +161,9 @@ export default function UpgradePage() {
                         icon={Crown}
                         color="bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400"
                         planId="ultra"
+                        currentPlan={currentPlan}
+                        onUpgrade={handleUpgrade}
+                        billingCycle={billingCycle}
                         features={[
                             "Everything in Premium",
                             "Commercial Usage Rights",

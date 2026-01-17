@@ -52,7 +52,7 @@ export default function Vendors() {
             // Simple price sort approximation (optional, robust parsing needed for real app)
             return 0; // Default Recommended
         });
-    }, [searchQuery, cityFilter, categoryFilter, sortOption, isVerifiedOnly, userPlan]); // Added userPlan dependency to re-check specific features if needed
+    }, [searchQuery, cityFilter, categoryFilter, sortOption, isVerifiedOnly]); // userPlan not needed
 
     const visibleVendors = filteredVendors.slice(0, visibleCount);
     const uniqueCategories = Array.from(new Set(VENDOR_DATA.map(v => v.category)));

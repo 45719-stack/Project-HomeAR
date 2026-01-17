@@ -5,10 +5,23 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 const DATA_FILE = path.join(__dirname, 'users.json');
 
-app.use(cors());
+// CORS Configuration
+app.use(cors({
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        /\.vercel\.app$/, // Allow all vercel subdomains
+        /\.web\.app$/,    // Allow firebase hosting
+        /\.firebaseapp\.com$/ // Allow firebase hosting
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(bodyParser.json());
 
 // Helper to read users
@@ -24,6 +37,15 @@ const readUsers = () => {
 const writeUsers = (users) => {
     fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
 };
+
+// Health Check Endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ ok: true });
+});
+
+app.get('/', (req, res) => {
+    res.send('HomeAR Backend is Running');
+});
 
 // Register endpoint
 app.post('/api/auth/register', (req, res) => {

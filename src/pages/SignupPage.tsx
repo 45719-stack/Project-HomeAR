@@ -1,28 +1,21 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, WifiOff } from 'lucide-react';
-import { registerUser } from '../utils/auth';
+import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import AuthErrorAlert from '../components/AuthErrorAlert';
-import { useServer } from '../context/ServerContext';
 
 export default function SignupPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-    const { isServerOnline, checkHealth } = useServer();
+    const { signup } = useAuth();
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!isServerOnline) {
-            setError("Cannot connect to server. Please check your connection.");
-            return;
-        }
-
         setError('');
 
         if (password !== confirmPassword) {
@@ -30,23 +23,25 @@ export default function SignupPage() {
             return;
         }
 
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters');
+            return;
+        }
+
         setIsLoading(true);
         try {
-            await registerUser(name, email, password);
-            // Optionally auto-login or redirect to login
-            alert('Registration successful! Please sign in.');
-            navigate('/login');
-        } catch (err: any) {
-            setError(err.message || 'Registration failed');
+            await signup(email, password, name);
+            navigate('/');
+        } catch (err) {
+            console.error(err);
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('Failed to create an account. Please try again.');
+            }
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const handleRetryConnection = async () => {
-        setIsLoading(true);
-        await checkHealth();
-        setIsLoading(false);
     };
 
     return (
@@ -60,20 +55,11 @@ export default function SignupPage() {
 
                 {/* Body */}
                 <div className="p-8 space-y-6">
-                    {/* Offline Warning */}
-                    {!isServerOnline && (
-                        <AuthErrorAlert
-                            title="Server is temporarily unavailable"
-                            message="We can't reach our servers right now. Please try again later."
-                            onRetry={handleRetryConnection}
-                        />
-                    )}
-
-                    {/* API Error Message */}
-                    {isServerOnline && error && (
+                    {/* Error Message */}
+                    {error && (
                         <AuthErrorAlert
                             message={error}
-                            onRetry={() => handleSignup({ preventDefault: () => { } } as any)}
+                            onRetry={() => setError('')}
                         />
                     )}
 
@@ -88,7 +74,7 @@ export default function SignupPage() {
                                 <input
                                     type="text"
                                     required
-                                    disabled={!isServerOnline || isLoading}
+                                    disabled={isLoading}
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -106,7 +92,7 @@ export default function SignupPage() {
                                 <input
                                     type="email"
                                     required
-                                    disabled={!isServerOnline || isLoading}
+                                    disabled={isLoading}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -124,7 +110,7 @@ export default function SignupPage() {
                                 <input
                                     type="password"
                                     required
-                                    disabled={!isServerOnline || isLoading}
+                                    disabled={isLoading}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -142,7 +128,7 @@ export default function SignupPage() {
                                 <input
                                     type="password"
                                     required
-                                    disabled={!isServerOnline || isLoading}
+                                    disabled={isLoading}
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -153,13 +139,11 @@ export default function SignupPage() {
 
                         <button
                             type="submit"
-                            disabled={isLoading || !isServerOnline}
+                            disabled={isLoading}
                             className="w-full flex items-center justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (
                                 <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                            ) : !isServerOnline ? (
-                                <><WifiOff size={18} className="mr-2" /> Server Offline</>
                             ) : (
                                 <>Create Account <ArrowRight size={18} className="ml-2" /></>
                             )}

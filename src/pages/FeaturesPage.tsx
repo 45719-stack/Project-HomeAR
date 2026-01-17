@@ -1,6 +1,6 @@
 import { Wand2, Layout, Sofa, Check, ArrowRight, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuthGate } from '../hooks/useAuthGate';
 import PaywallModal from '../components/PaywallModal';
 
@@ -8,12 +8,7 @@ export default function FeaturesPage() {
     const navigate = useNavigate();
     const { requireAuth } = useAuthGate();
     const [showPaywall, setShowPaywall] = useState(false);
-    const [userPlan, setUserPlan] = useState<string>('free');
-
-    useEffect(() => {
-        const storedPlan = localStorage.getItem('plan');
-        if (storedPlan) setUserPlan(storedPlan);
-    }, []);
+    const [userPlan] = useState<string>(() => localStorage.getItem('plan') || 'free');
 
     const features = [
         {

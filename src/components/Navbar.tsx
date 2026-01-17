@@ -1,15 +1,18 @@
 import { Link, useLocation, useNavigate, NavLink } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Menu, X, Crown, Check, ChevronDown, User, Grid, LogOut, AlertTriangle, WifiOff, Settings } from 'lucide-react';
+import { Menu, X, Crown, Check, ChevronDown, User, Grid, LogOut, AlertTriangle, Settings } from 'lucide-react';
 
-import { useServer } from '../context/ServerContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
+    const { user, userData, logout } = useAuth();
 
-    const { isServerOnline } = useServer();
-    const [userPlan, setUserPlan] = useState<'free' | 'premium' | 'ultra'>('free');
-    const [user, setUser] = useState<{ name: string; email?: string } | null>(null);
+    // Derived state
+    const userPlan = userData?.plan || 'free';
+    const userName = userData?.fullName || user?.displayName || user?.email?.split('@')[0] || 'User';
+    const userEmail = user?.email || '';
+
     const [isPlanMenuOpen, setIsPlanMenuOpen] = useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [showDowngradeConfirm, setShowDowngradeConfirm] = useState(false);
@@ -23,42 +26,9 @@ export default function Navbar() {
         setIsOpen(false);
     }, [location.pathname]);
 
-    useEffect(() => {
-        const checkAuthAndPlan = () => {
-            // Check Plan
-            const plan = localStorage.getItem('plan') as 'free' | 'premium' | 'ultra';
-            if (plan) setUserPlan(plan);
-            else setUserPlan('free');
-
-            // Check User
-            const token = localStorage.getItem('token');
-            const storedUser = localStorage.getItem('user');
-            if (token && storedUser) {
-                try {
-                    setUser(JSON.parse(storedUser));
-                } catch (e) {
-                    console.error("Failed to parse user", e);
-                    setUser(null);
-                }
-            } else {
-                setUser(null);
-            }
-        };
-
-        checkAuthAndPlan();
-        window.addEventListener('storage', checkAuthAndPlan);
-        window.addEventListener('planChange', checkAuthAndPlan);
-        return () => {
-            window.removeEventListener('storage', checkAuthAndPlan);
-            window.removeEventListener('planChange', checkAuthAndPlan);
-        };
-    }, []);
-
     const handleUpgradeClick = (e: React.MouseEvent) => {
         if (!user) {
             e.preventDefault();
-            // Redirect to login with a "return to" intent (handled via state or query param)
-            // Ideally we pass state, but query param is visible and easy.
             navigate('/login?redirect=/upgrade');
         } else {
             navigate('/upgrade');
@@ -67,21 +37,21 @@ export default function Navbar() {
     };
 
     const handleDowngrade = () => {
-        localStorage.setItem('plan', 'free');
-        window.dispatchEvent(new Event('storage'));
-        window.dispatchEvent(new Event('planChange'));
-        setUserPlan('free');
+        // In a real app, this would be an API call to Firestore
+        // For now, we can only update local state if we had a setPlan method, 
+        // but since we read from Firestore, this might be tricky without a backend function.
+        // We'll just show an alert or console log for now as "Not Implemented" fully without backend logic,
+        // or we can try to update the Firestore doc if we allowed client-side writes (which we usually don't for plans).
+        // Assuming we just want the UI interaction for now:
+        alert("Plan downgrade would happen here. (Requires Firestore write permissions or Cloud Function)");
         setShowDowngradeConfirm(false);
         setIsPlanMenuOpen(false);
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
+    const handleLogout = async () => {
+        await logout();
         setIsProfileMenuOpen(false);
         setIsOpen(false);
-        window.dispatchEvent(new Event('storage'));
         navigate('/');
     };
 
@@ -94,7 +64,6 @@ export default function Navbar() {
             .slice(0, 2);
     };
 
-    // NavItem Component for Desktop
     // NavItem Component for Desktop
     const NavItem = ({ to, children }: { to: string; children: React.ReactNode }) => {
         const baseClasses = "relative group px-1 py-2 text-sm font-medium transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md"; // Reusable base
@@ -130,8 +99,6 @@ export default function Navbar() {
 
     return (
         <>
-            {/* AnnouncementBar Removed */}
-
             {/* Downgrade Confirmation Modal */}
             {showDowngradeConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
@@ -172,13 +139,6 @@ export default function Navbar() {
                                     Home<span className="text-primary-600 dark:text-primary-400">AR</span>
                                 </span>
                             </Link>
-
-                            {!isServerOnline && (
-                                <div className="ml-4 hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-full text-xs font-medium text-amber-600 dark:text-amber-500">
-                                    <WifiOff size={12} />
-                                    <span>Offline Demo Mode</span>
-                                </div>
-                            )}
                         </div>
 
                         <div className="hidden md:ml-8 md:flex md:space-x-6 items-center">
@@ -187,19 +147,12 @@ export default function Navbar() {
                             <NavItem to="/features">Features</NavItem>
                             <NavItem to="/vendors">Vendors</NavItem>
 
-                            {!user && isServerOnline && (
+                            {!user && (
                                 <NavItem to="/login">Login</NavItem>
-                            )}
-
-                            {!user && !isServerOnline && (
-                                <span className="text-gray-400 dark:text-gray-600 px-3 py-2 text-sm font-medium cursor-not-allowed" title="Server offline">Login</span>
                             )}
                         </div>
 
                         <div className="hidden md:flex items-center gap-4">
-                            {/* Theme Toggle - Ensuring it's not the white pill */}
-
-
                             {userPlan === 'free' ? (
                                 <button
                                     onClick={handleUpgradeClick}
@@ -265,10 +218,10 @@ export default function Navbar() {
                                     <button
                                         onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                                         className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:ring-2 focus:ring-primary-500 focus:outline-none"
-                                        title={user.name}
+                                        title={userName}
                                     >
                                         <div className="w-9 h-9 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full flex items-center justify-center font-bold text-sm border-2 border-white dark:border-gray-800 shadow-sm hover:scale-105 transition-transform">
-                                            {getInitials(user.name)}
+                                            {getInitials(userName)}
                                         </div>
                                     </button>
 
@@ -280,8 +233,8 @@ export default function Navbar() {
                                             ></div>
                                             <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 z-20 py-1 animate-in fade-in slide-in-from-top-2">
                                                 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                                                    <p className="font-bold text-gray-900 dark:text-white truncate">{user.name}</p>
-                                                    <p className="text-xs text-gray-500 truncate">{user.email || 'User'}</p>
+                                                    <p className="font-bold text-gray-900 dark:text-white truncate">{userName}</p>
+                                                    <p className="text-xs text-gray-500 truncate">{userEmail}</p>
                                                 </div>
 
                                                 <button className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
@@ -311,7 +264,7 @@ export default function Navbar() {
                             {/* Mobile User Profile (simplified) */}
                             {user && (
                                 <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full flex items-center justify-center font-bold text-xs">
-                                    {getInitials(user.name)}
+                                    {getInitials(userName)}
                                 </div>
                             )}
 
@@ -331,36 +284,24 @@ export default function Navbar() {
                 {isOpen && (
                     <div className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 transition-colors duration-300">
                         <div className="pt-2 pb-3 space-y-1 px-4">
-                            {!isServerOnline && (
-                                <div className="mb-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg text-sm font-medium text-amber-600 dark:text-amber-500 flex items-center gap-2">
-                                    <WifiOff size={16} />
-                                    <span>Offline Demo Mode</span>
-                                </div>
-                            )}
                             <NavLink to="/" className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActive ? 'bg-primary-50 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>Home</NavLink>
                             <NavLink to="/redesign" className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActive ? 'bg-primary-50 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>Start Now</NavLink>
                             <NavLink to="/features" className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActive ? 'bg-primary-50 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>Features</NavLink>
                             <NavLink to="/vendors" className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActive ? 'bg-primary-50 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>Vendors</NavLink>
 
                             {!user && (
-                                <>
-                                    {isServerOnline ? (
-                                        <NavLink to="/login" className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActive ? 'bg-primary-50 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>Login</NavLink>
-                                    ) : (
-                                        <span className="block px-3 py-2 rounded-md text-base font-medium text-gray-400 dark:text-gray-600 cursor-not-allowed">Login (Offline)</span>
-                                    )}
-                                </>
+                                <NavLink to="/login" className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActive ? 'bg-primary-50 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>Login</NavLink>
                             )}
 
                             {user && (
                                 <div className="border-t border-gray-100 dark:border-gray-800 mt-2 pt-2">
                                     <div className="px-3 py-2 flex items-center gap-3">
                                         <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full flex items-center justify-center font-bold text-sm">
-                                            {getInitials(user.name)}
+                                            {getInitials(userName)}
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-gray-900 dark:text-white">{user.name}</p>
-                                            <p className="text-xs text-gray-500">{user.email || 'User'}</p>
+                                            <p className="font-semibold text-gray-900 dark:text-white">{userName}</p>
+                                            <p className="text-xs text-gray-500">{userEmail}</p>
                                         </div>
                                     </div>
                                     <button className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">My Profile</button>
