@@ -1,8 +1,21 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AuthErrorAlert from '../components/AuthErrorAlert';
+
+// Simple Toast Component
+const Toast = ({ message, isVisible }: { message: string; isVisible: boolean }) => {
+    if (!isVisible) return null;
+    return (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+            <div className="bg-gray-900/90 dark:bg-white/90 backdrop-blur-md text-white dark:text-gray-900 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 border border-gray-700/50 dark:border-gray-200/50">
+                <CheckCircle2 size={20} className="text-green-500 dark:text-green-600" />
+                <span className="font-medium text-sm">{message}</span>
+            </div>
+        </div>
+    );
+};
 
 export default function SignupPage() {
     const [name, setName] = useState('');
@@ -11,6 +24,7 @@ export default function SignupPage() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
     const navigate = useNavigate();
     const { signup } = useAuth();
 
@@ -31,7 +45,11 @@ export default function SignupPage() {
         setIsLoading(true);
         try {
             await signup(name, email, password);
-            navigate('/');
+            setShowSuccess(true);
+            // Wait 1.5s then redirect to login with email prefilled
+            setTimeout(() => {
+                navigate('/login', { state: { email } });
+            }, 1500);
         } catch (err) {
             console.error(err);
             if (err instanceof Error) {
@@ -39,13 +57,14 @@ export default function SignupPage() {
             } else {
                 setError('Failed to create an account. Please try again.');
             }
-        } finally {
-            setIsLoading(false);
+            setIsLoading(false); // Only stop loading if error, otherwise keep loading state during redirect
         }
     };
 
     return (
         <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-gray-50 dark:bg-slate-950 transition-colors">
+            <Toast isVisible={showSuccess} message="Account created ✅ Now login to continue." />
+
             <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-800">
                 {/* Header */}
                 <div className="p-8 text-center bg-gradient-to-b from-primary-50 to-white dark:from-slate-900 dark:to-gray-900 border-b border-gray-100 dark:border-gray-800">
@@ -74,7 +93,7 @@ export default function SignupPage() {
                                 <input
                                     type="text"
                                     required
-                                    disabled={isLoading}
+                                    disabled={isLoading || showSuccess}
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -92,7 +111,7 @@ export default function SignupPage() {
                                 <input
                                     type="email"
                                     required
-                                    disabled={isLoading}
+                                    disabled={isLoading || showSuccess}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -110,7 +129,7 @@ export default function SignupPage() {
                                 <input
                                     type="password"
                                     required
-                                    disabled={isLoading}
+                                    disabled={isLoading || showSuccess}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -128,7 +147,7 @@ export default function SignupPage() {
                                 <input
                                     type="password"
                                     required
-                                    disabled={isLoading}
+                                    disabled={isLoading || showSuccess}
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -139,10 +158,10 @@ export default function SignupPage() {
 
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || showSuccess}
                             className="w-full flex items-center justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isLoading ? (
+                            {isLoading || showSuccess ? (
                                 <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                             ) : (
                                 <>Create Account <ArrowRight size={18} className="ml-2" /></>

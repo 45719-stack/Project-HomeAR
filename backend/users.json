@@ -30,5 +30,13 @@
     "password": "password123",
     "plan": "free",
     "createdAt": 1768619988000
+  },
+  {
+    "id": 1768621020203,
+    "name": "taha",
+    "email": "taha23@gmail.com",
+    "password": "taha123",
+    "plan": "free",
+    "createdAt": 1768621020203
   }
 ]

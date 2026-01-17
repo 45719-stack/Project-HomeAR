@@ -47,14 +47,16 @@ const LoginSplash = ({ isVisible, isSuccess }: { isVisible: boolean; isSuccess: 
 };
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { login } = useAuth();
+
+    // Initialize email from navigation state or empty
+    const [email, setEmail] = useState(location.state?.email || '');
     const [password, setPassword] = useState('');
     const [isSplashVisible, setIsSplashVisible] = useState(false);
     const [loginStatus, setLoginStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [error, setError] = useState('');
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { login } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
 
     // Derived state for info message
