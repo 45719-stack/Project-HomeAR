@@ -8,6 +8,23 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const DATA_FILE = path.join(__dirname, 'users.json');
 
+// Ensure data file exists with valid JSON
+if (!fs.existsSync(DATA_FILE)) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify([]));
+} else {
+    try {
+        const content = fs.readFileSync(DATA_FILE, 'utf8');
+        if (!content.trim()) {
+            fs.writeFileSync(DATA_FILE, JSON.stringify([]));
+        } else {
+            JSON.parse(content); // Test parse
+        }
+    } catch (e) {
+        console.error("Corrupt users.json found, resetting to empty array.");
+        fs.writeFileSync(DATA_FILE, JSON.stringify([]));
+    }
+}
+
 // CORS Configuration
 app.use(cors({
     origin: [
@@ -26,11 +43,12 @@ app.use(bodyParser.json());
 
 // Helper to read users
 const readUsers = () => {
-    if (!fs.existsSync(DATA_FILE)) {
+    try {
+        const data = fs.readFileSync(DATA_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
         return [];
     }
-    const data = fs.readFileSync(DATA_FILE);
-    return JSON.parse(data);
 };
 
 // Helper to write users
@@ -48,38 +66,58 @@ app.get('/', (req, res) => {
 });
 
 // Register endpoint
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/signup', (req, res) => {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
         return res.status(400).json({ message: 'All fields are required' });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
     const users = readUsers();
 
-    if (users.find(u => u.email === email)) {
-        return res.status(400).json({ message: 'User already exists' });
+    if (users.find(u => u.email === normalizedEmail)) {
+        return res.status(409).json({ message: 'Email already registered' });
     }
 
-    const newUser = { id: Date.now(), name, email, password }; // Note: In production, hash passwords!
+    const newUser = {
+        id: Date.now(),
+        name: name.trim(),
+        email: normalizedEmail,
+        password: password // In production, hash this!
+    };
+
     users.push(newUser);
     writeUsers(users);
 
-    res.status(201).json({ message: 'User registered successfully', user: { id: newUser.id, name: newUser.name, email: newUser.email } });
+    // Return user without password
+    const { password: _, ...userSafe } = newUser;
+    res.status(201).json({ message: 'User registered successfully', user: userSafe, token: 'dummy-token-' + newUser.id });
 });
 
 // Login endpoint
 app.post('/api/auth/login', (req, res) => {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password required' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
     const users = readUsers();
-    const user = users.find(u => u.email === email && u.password === password);
+    const user = users.find(u => u.email === normalizedEmail && u.password === password);
 
     if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    res.json({ message: 'Login successful', user: { id: user.id, name: user.name, email: user.email }, token: 'fake-jwt-token-' + Date.now() });
+    // Return user without password
+    const { password: _, ...userSafe } = user;
+    res.json({
+        message: 'Login successful',
+        user: userSafe,
+        token: 'dummy-token-' + user.id
+    });
 });
 
 app.listen(PORT, () => {

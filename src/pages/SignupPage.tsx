@@ -30,7 +30,7 @@ export default function SignupPage() {
 
         setIsLoading(true);
         try {
-            await signup(email, password, name);
+            await signup(name, email, password);
             navigate('/');
         } catch (err) {
             console.error(err);

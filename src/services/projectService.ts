@@ -1,4 +1,3 @@
-import { demoAuth } from './demoAuth';
 
 export interface ProjectDimensions {
     width: number;
@@ -15,14 +14,14 @@ export interface ProjectData {
 }
 
 export const saveProject = async (data: ProjectData): Promise<string> => {
-    const currentUser = await demoAuth.getCurrentUser();
+    const userJson = localStorage.getItem('user');
 
-    if (!currentUser) throw new Error("User must be logged in to save a project");
+    if (!userJson) throw new Error("User must be logged in to save a project");
 
     // Mock saving - just log it and return a fake ID
-    console.log("Saving project (Demo Mode):", data);
+    console.log("Saving project (Local Mode):", data);
 
     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
 
-    return "demo_project_" + Date.now();
+    return "local_project_" + Date.now();
 };
